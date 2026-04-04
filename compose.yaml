@@ -1,47 +1,10 @@
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Docker Compose reference guide at
-# https://docs.docker.com/go/compose-spec-reference/
-
-# Here the instructions define your application as a service called "server".
-# This service is built from the Dockerfile in the current directory.
-services:
-  server:
-    build:
-      context: .
-    ports:
-      - "8080:8080"
-    environment:
-      # --- Aiven MySQL Database Connection Details ---
-      # These environment variables will be picked up by your Spring Boot application.
-      # Spring Boot automatically maps these to `spring.datasource.url`, `spring.datasource.username`, etc.
-      # The JDBC URL format is crucial and matches your Aiven provided URL.
-     # In your compose.yaml file
-
-# ... other service configuration ...
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://messdatabase-raghavbjaj1702-96ce.j.aivencloud.com:13795/defaultdb?ssl-mode=DISABLED
-      SPRING_DATASOURCE_USERNAME: ${DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-# ...
-
-      # Optional: Hibernate DDL-Auto setting.
-      # Adjust this based on your database schema management needs:
-      #   - 'update': (Common in development) Hibernate attempts to update the schema
-      #               to match your entities. Use with caution in production.
-      #   - 'validate': (Recommended for production) Hibernate validates that the
-      #                 schema matches your entities but makes no changes.
-      #   - 'none': (Also common for production) Hibernate does not touch the schema.
-      #   - 'create': Creates the schema on startup (drops existing if it exists).
-      #   - 'create-drop': Creates on startup, drops on shutdown.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update # You might change this to 'validate' or 'none' for production
-
-      # If you need to set the timezone for MySQL, add:
-      # SPRING_DATASOURCE_CONNECTION_PROPERTIES: serverTimezone=UTC
-
-    # If your application needs more memory within the container (e.g., for Spring Boot startup)
-    # uncomment and adjust these.
-    # mem_limit: 1024m # Example: Limit to 1GB RAM for the container
-    # cpuset: "0-1" # Example: Use CPU cores 0 and 1 (if you have a multi-core system)
-
-# All the commented-out sections for the local PostgreSQL database (db service, volumes, secrets)
-# have been removed as they are no longer needed.
+# ──────────────────────────────────────────────────────────────────────────────
+# SUPERSEDED — This file is no longer used.
+#
+# The canonical docker-compose configuration has moved to the project root:
+#   mess/compose.yaml
+#
+# That file orchestrates all three services (db, server, frontend) together.
+# Run from the mess/ directory:
+#   docker compose up -d
+# ──────────────────────────────────────────────────────────────────────────────
