@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/prices/**", "/menu/**").hasRole("ADMIN")
 
                 // ── ADMIN write operations ────────────────────────────────
+                .requestMatchers(HttpMethod.POST,   "/students/bulk").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST,   "/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/students/**").hasRole("ADMIN")
