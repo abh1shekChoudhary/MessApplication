@@ -1,73 +1,60 @@
 package org.messplacement.messsecond.Service;
 
 import org.messplacement.messsecond.DTO.StudentDue;
+import org.messplacement.messsecond.Dao.MealPriceRepository;
 import org.messplacement.messsecond.Dao.MessDao;
+import org.messplacement.messsecond.Entities.MealPrice;
 import org.messplacement.messsecond.Entities.Student;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // <-- Import Transactional
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class MessServiceImpl implements MessService {
 
-    //Calculate total (list of objects)
-    public List<Student> calcTotal(List<Student> student) {
-        int total = 0;
-
-        for (Student value : student) {
-            if (value.getBreakfast()) {
-                total += 75;
-            }
-            if (value.getLunch()) {
-                total += 100;
-            }
-            if (value.getDinner()) {
-                total += 125;
-            }
-            value.setTotal(total);
-            total = 0;
-            if(value.getDate() == null){value.setDate(LocalDate.now());}
-
-        }
-        return student;
-    }
-// calculate total for single object
-    public Student calcTotal(Student student ){
-        int total = 0;
-        if (student.getBreakfast()) {total += 75;}
-        if (student.getLunch() ) {total += 100;}
-        if (student.getDinner()) {total += 125;}
-        student.setTotal(total);
-        if(student.getDate() == null){student.setDate(LocalDate.now());}
-        return student;
-    }
-
-
     @Autowired
     private MessDao messDao;
 
-     public MessServiceImpl() {
+    @Autowired
+    private MealPriceRepository mealPriceRepository;
 
+    // ── Price helpers ──────────────────────────────────────────────────────
+
+    /**
+     * Reads current prices from the database.
+     * Falls back to default values if the price rows haven't been seeded yet.
+     */
+    private Map<String, Integer> getPriceMap() {
+        List<MealPrice> prices = mealPriceRepository.findAll();
+        if (prices.isEmpty()) {
+            // Default fallback prices (also seeded by DataInitializer on startup)
+            return Map.of("BREAKFAST", 75, "LUNCH", 100, "DINNER", 125);
+        }
+        return prices.stream()
+                .collect(Collectors.toMap(MealPrice::getMealType, MealPrice::getPriceInr));
     }
 
+    // ── Service methods ────────────────────────────────────────────────────
+
     @Override
-    public String getHomePage(){
+    public String getHomePage() {
         return "This is the home page, Service Layer.";
     }
 
     @Override
     public List<Student> getStudents(LocalDate date) {
-        // If a date is provided, use the new DAO method
         if (date != null) {
             return messDao.findByDate(date);
         }
-        // If no date is provided, return all students (optional fallback)
         return messDao.findAll();
     }
+
     @Override
     public List<StudentDue> getTotalDues(LocalDate startDate, LocalDate endDate) {
         return messDao.findTotalDuesByDateRange(startDate, endDate);
@@ -75,74 +62,70 @@ public class MessServiceImpl implements MessService {
 
     @Override
     public List<Student> getStudent(String Reg) {
-
         return messDao.findByReg(Reg);
     }
 
     @Override
     public int getStudentTotal(String studentId) {
-          return messDao.getStudentTotal(studentId);
+        return messDao.getStudentTotal(studentId);
     }
 
-
     @Override
-    @Transactional // This annotation ensures the entire operation is a single database transaction.
+    @Transactional
     public String addStudent(List<Student> students) {
-        // We only expect one student record from the "Add Attendance" form.
-        if (students.isEmpty()) {
-            return "No student data provided.";
-        }
-        Student incomingStudent = students.get(0);
+        if (students.isEmpty()) return "No student data provided.";
 
-        // Find if a record already exists for this student on this date.
-        Optional<Student> existingStudentOpt = messDao.findByRegAndDate(incomingStudent.getreg(), incomingStudent.getDate());
+        Student incomingStudent = students.get(0);
+        Optional<Student> existingStudentOpt = messDao.findByRegAndDate(
+                incomingStudent.getreg(), incomingStudent.getDate());
 
         if (existingStudentOpt.isPresent()) {
-            // --- RECORD EXISTS: MERGE AND UPDATE ---
             Student existingStudent = existingStudentOpt.get();
-
-            // Merge the meal data. If the incoming value is true, set it to true.
-            if (incomingStudent.getBreakfast()) {
-                existingStudent.setBreakfast(true);
-            }
-            if (incomingStudent.getLunch()) {
-                existingStudent.setLunch(true);
-            }
-            if (incomingStudent.getDinner()) {
-                existingStudent.setDinner(true);
-            }
-
-            // Recalculate the total and save the updated record.
-            Student updatedStudent = calcTotal(existingStudent);
-            messDao.save(updatedStudent);
+            if (incomingStudent.getBreakfast()) existingStudent.setBreakfast(true);
+            if (incomingStudent.getLunch())     existingStudent.setLunch(true);
+            if (incomingStudent.getDinner())    existingStudent.setDinner(true);
+            messDao.save(calcTotal(existingStudent));
             return "Student attendance successfully updated.";
-
         } else {
-            // --- RECORD DOES NOT EXIST: CREATE NEW ---
-            // Calculate the total for the new record and save it.
-            Student newStudent = calcTotal(incomingStudent);
-            messDao.save(newStudent);
+            messDao.save(calcTotal(incomingStudent));
             return "New student attendance record successfully created.";
         }
     }
 
     @Override
     public String updateStudent(Student student) {
-         LocalDate date = student.getDate();
-         String reg = student.getreg();
-         messDao.deleteByRegAndDate(reg,date);
-
-          Student obj = calcTotal(student);
-          messDao.save(obj);
-        return " Updated Successfully";
+        messDao.deleteByRegAndDate(student.getreg(), student.getDate());
+        messDao.save(calcTotal(student));
+        return null;
     }
 
     @Override
     public String deleteStudent(String reg, LocalDate date) {
-
-        messDao.deleteByRegAndDate(reg,date);
-        return " Deleted Successfully";
+        messDao.deleteByRegAndDate(reg, date);
+        return null;
     }
 
+    // ── Price calculation (reads from DB) ──────────────────────────────────
 
+    public List<Student> calcTotal(List<Student> students) {
+        Map<String, Integer> prices = getPriceMap();
+        for (Student s : students) {
+            setTotal(s, prices);
+        }
+        return students;
+    }
+
+    public Student calcTotal(Student student) {
+        setTotal(student, getPriceMap());
+        return student;
+    }
+
+    private void setTotal(Student student, Map<String, Integer> prices) {
+        int total = 0;
+        if (student.getBreakfast()) total += prices.getOrDefault("BREAKFAST", 75);
+        if (student.getLunch())     total += prices.getOrDefault("LUNCH",     100);
+        if (student.getDinner())    total += prices.getOrDefault("DINNER",    125);
+        student.setTotal(total);
+        if (student.getDate() == null) student.setDate(LocalDate.now());
+    }
 }

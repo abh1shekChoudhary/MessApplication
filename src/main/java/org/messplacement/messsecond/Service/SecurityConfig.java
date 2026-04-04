@@ -37,6 +37,10 @@ public class SecurityConfig {
                 // ── Public ────────────────────────────────────────────────
                 .requestMatchers("/auth/**").permitAll()
 
+                // ── Prices & Menu — readable by all authenticated roles ───
+                .requestMatchers(HttpMethod.GET, "/prices", "/menu", "/menu/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/prices/**", "/menu/**").hasRole("ADMIN")
+
                 // ── ADMIN write operations ────────────────────────────────
                 .requestMatchers(HttpMethod.POST,   "/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/students").hasRole("ADMIN")
