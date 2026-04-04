@@ -1,44 +1,37 @@
-//package org.messplacement.messsecond.Service;
-//
-//import org.messplacement.messsecond.Dao.MessDao;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.jdbc.core.JdbcTemplate;
-//import org.springframework.security.core.userdetails.User;
-//import org.springframework.security.core.userdetails.UserDetails;
-//import org.springframework.security.core.userdetails.UserDetailsService;
-//import org.springframework.security.core.userdetails.UsernameNotFoundException;
-//import org.springframework.stereotype.Service;
-//
-//
-//import java.util.List;
-//import java.util.Map;
-//
-//@Service
-//public class MyUserDetailsService implements UserDetailsService {
-//
-//    @Autowired
-//    private MessDao messDao;
-//
-//    @Override
-//    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-//        // MySQL query to retrieve user details based on email
-//        String sql = "SELECT reg, email, password FROM users WHERE email = ?";
-//
-//        List<Login> rows = MessDao.queryForList(sql, email);
-//        if (rows.isEmpty()) {
-//            throw new UsernameNotFoundException("User not found");
-//        }
-//
-//        // Retrieve the first row (since email should be unique)
-//        Map<String, Object> row = rows.get(0);
-//        String reg = (String) row.get("reg");
-//        String password = (String) row.get("password");
-//
-//        // Return the UserDetails, including reg as an authority or as custom info if needed
-//        return User.withUsername(email)
-//                .password(password) // Password should ideally be encoded
-//                .authorities("ROLE_USER") // Add roles if applicable
-//                .build();
-//    }
-//}
-//
+package org.messplacement.messsecond.Service;
+
+import org.messplacement.messsecond.Dao.UserRepository;
+import org.messplacement.messsecond.Entities.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+/**
+ * Implements Spring's UserDetailsService so that Spring Boot does not
+ * auto-configure a default in-memory user (and print the random password).
+ * The JwtAuthFilter handles stateless authentication; this class is retained
+ * for integration completeness and potential future use.
+ */
+@Service
+class MyUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .authorities(List.of(new SimpleGrantedAuthority(user.getRole().name())))
+                .build();
+    }
+}
