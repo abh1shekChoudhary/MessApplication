@@ -19,13 +19,11 @@ public interface MessDao extends JpaRepository<Student, String> {
 
     List<Student> findByDate(LocalDate date);
 
-
     @Query("SELECT new org.messplacement.messsecond.DTO.StudentDue(s.reg, SUM(s.total)) FROM Student s WHERE s.date BETWEEN :startDate AND :endDate GROUP BY s.reg")
     List<StudentDue> findTotalDuesByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-
-    @Query("""
-            SELECT SUM(s.total) FROM Student s WHERE s.reg = :studentId""")
+    // Fixed: COALESCE prevents NPE when no records exist for the student (SUM returns NULL)
+    @Query("SELECT COALESCE(SUM(s.total), 0) FROM Student s WHERE s.reg = :studentId")
     int getStudentTotal(@Param("studentId") String studentId);
 
     @Query("SELECT s FROM Student s WHERE s.reg = :reg")

@@ -4,6 +4,9 @@ import java.time.LocalDate;
 
 
 @Entity
+@Table(name = "student", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"reg", "date"})
+})
 public class Student {
 
     @Id
