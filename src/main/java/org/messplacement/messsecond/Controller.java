@@ -15,7 +15,11 @@ import java.util.List;
 
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:4200", "https://mess-application-front-end-angular.vercel.app"})
+@CrossOrigin(origins = {
+        "http://localhost:4200",
+        "http://localhost",
+        "https://mess-application-front-end-angular.vercel.app"
+})
 public class Controller {
 
     @Autowired

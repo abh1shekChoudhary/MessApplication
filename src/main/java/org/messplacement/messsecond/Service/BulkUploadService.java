@@ -55,6 +55,10 @@ public class BulkUploadService {
             while ((row = reader.readNext()) != null) {
                 rowNum++;
                 try {
+                    if (row.length < 5) {
+                        result.addError(rowNum, "Row has fewer than 5 columns (expected: reg, date, breakfast, lunch, dinner)");
+                        continue;
+                    }
                     Student s = parseRow(row[0], row[1], row[2], row[3], row[4]);
                     messService.addStudent(List.of(s));
                     result.incrementSuccess();
@@ -130,9 +134,12 @@ public class BulkUploadService {
         return switch (cell.getCellType()) {
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
             case NUMERIC -> {
-                // Excel might store date as numeric — return the raw double as string
+                // Excel stores dates as numeric serials — check before treating as number
+                if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
+                    yield cell.getLocalDateTimeCellValue().toLocalDate().toString(); // YYYY-MM-DD
+                }
                 double d = cell.getNumericCellValue();
-                yield String.valueOf((long) d);  // handles integer-like values
+                yield String.valueOf((long) d);
             }
             case STRING  -> cell.getStringCellValue();
             default      -> "";
